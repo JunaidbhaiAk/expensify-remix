@@ -15,10 +15,12 @@ import type { MonthlyExpense } from "./types";
 import { getMonthNames, groupByMonth } from "~/lib/utils";
 import { useLoaderData } from "react-router";
 import type { loader } from "~/routes/page";
+import AddExpenses from "./AddExpensesDraft";
 
 export default function MonthlyChart() {
   const { expenses } = useLoaderData<typeof loader>();
   const monthlyData: MonthlyExpense[] = groupByMonth(expenses);
+
   return (
     <Card>
       <CardHeader>
@@ -26,50 +28,54 @@ export default function MonthlyChart() {
         <CardDescription>Total spending over time</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer
-          config={{
-            total: {
-              label: "Total",
-              color: "hsl(var(--chart-1))",
-            },
-          }}
-          className="h-[300px] w-full"
-        >
-          <AreaChart data={monthlyData}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => {
-                const [year, month] = value.split("-");
-                const monthNames = getMonthNames;
-                return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
-              }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => `$${value}`}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => [`$${value}`, "Total"]}
-                />
-              }
-            />
-            <Area
-              type="linear"
-              dataKey="total"
-              fill="var(--color-total)"
-              fillOpacity={0.4}
-              stroke="var(--color-total)"
-            />
-          </AreaChart>
-        </ChartContainer>
+        {monthlyData?.length ? (
+          <ChartContainer
+            config={{
+              total: {
+                label: "Total",
+                color: "hsl(var(--chart-1))",
+              },
+            }}
+            className="h-[300px] w-full"
+          >
+            <AreaChart data={monthlyData}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => {
+                  const [year, month] = value.split("-");
+                  const monthNames = getMonthNames;
+                  return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
+                }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => `$${value}`}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value) => [`$${value}`, "Total"]}
+                  />
+                }
+              />
+              <Area
+                type="linear"
+                dataKey="total"
+                fill="var(--color-total)"
+                fillOpacity={0.4}
+                stroke="var(--color-total)"
+              />
+            </AreaChart>
+          </ChartContainer>
+        ) : (
+          <AddExpenses />
+        )}
       </CardContent>
     </Card>
   );
