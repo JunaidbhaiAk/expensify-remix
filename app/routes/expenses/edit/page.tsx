@@ -1,51 +1,87 @@
-import { redirect, useLoaderData } from "react-router";
+import moment from "moment";
+import {
+  useLoaderData,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "react-router";
 import z from "zod";
 import { ExpenseForm } from "~/components/expenses/add/ExpenseForm";
 import {
   expenseSchema,
   type ExpenseFormValues,
 } from "~/components/expenses/add/validator";
-import { DUMMY_EXPENSES } from "~/lib/constant";
+import { CATEGORIES } from "~/lib/constant";
+import { prisma } from "~/lib/prisma";
 
 export const handle = {
   crumb: () => ({ label: "Edit" }), // Drop href—let layout handle linking for non-current
 };
 
-export async function loader({ params }: { params: { id: string } }) {
-  const expense = DUMMY_EXPENSES.find((e) => e.id === Number(params.id));
-  if (!expense) throw new Response("Not found", { status: 404 });
-  return { expense };
-}
+export async function loader({ params }: LoaderFunctionArgs) {
+  const { id } = params;
 
-export async function action({
-  request,
-  params,
-}: {
-  request: Request;
-  params: { id: string };
-}) {
-  const formData = await request.formData();
-  const rawData = Object.fromEntries(formData) as unknown as ExpenseFormValues;
-
-  const result = expenseSchema.safeParse(rawData);
-  if (!result.success) {
-    return {
-      errors: z.treeifyError(result.error),
-      data: rawData,
-      success: false,
-    };
+  if (!id) {
+    throw new Response("Expense ID is required", { status: 400 });
   }
-  const updated = {
-    id: Number(params.id),
-    ...rawData,
+
+  const expense = await prisma.expense.findUnique({
+    where: { id },
+  });
+  const formattedExpenseData = {
+    ...expense,
+    id: expense?.id ?? "",
+    category: CATEGORIES?.find((e) => e === expense?.category) ?? undefined,
+    date: moment(expense?.date).format("YYYY-MM-DD"),
   };
 
-  const idx = DUMMY_EXPENSES.findIndex((e) => e.id === Number(params.id));
-  if (idx !== -1) {
-    DUMMY_EXPENSES[idx] = updated;
+  if (!expense) {
+    throw new Response("Expense not found", { status: 404 });
   }
 
-  return { success: true, message: "Expense updated successfully!" };
+  return { expense: formattedExpenseData };
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const { id } = params;
+
+  if (!id) {
+    return {
+      success: false,
+      errors: "Expense ID is required",
+    };
+  }
+
+  const formData = await request.formData();
+  const rawData = Object.fromEntries(formData) as unknown as ExpenseFormValues;
+  const formattedRawData = { ...rawData, amount: Number(rawData.amount) };
+  const result = expenseSchema.safeParse(formattedRawData);
+  if (!result.success) {
+    return {
+      success: false,
+      errors: z.treeifyError(result.error),
+      data: formattedRawData,
+    };
+  }
+
+  try {
+    await prisma.expense.update({
+      where: { id },
+      data: {
+        date: new Date(result.data.date),
+        description: result.data.description,
+        amount: result.data.amount,
+        category: result.data.category,
+      },
+    });
+
+    return { success: true, message: "Expense updated successfully!" };
+  } catch (error) {
+    console.error("Failed to update expense:", error);
+    return {
+      success: false,
+      errors: "Failed to update expense. Please try again.",
+    };
+  }
 }
 
 export default function EditExpensePage() {

@@ -1,16 +1,23 @@
-import { redirect } from "react-router";
-import { DUMMY_EXPENSES } from "~/lib/constant";
+import { redirect, type ActionFunctionArgs } from "react-router";
+import { prisma } from "~/lib/prisma";
 
-export async function action({ request }: { request: Request }) {
+export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const id = formData.get("id") as string;
 
-  // Filter out the deleted item (in a real app, delete from DB)
-  const index = DUMMY_EXPENSES.findIndex((e) => e.id === Number(id));
-  if (index > -1) {
-    DUMMY_EXPENSES.splice(index, 1);
+  if (!id) {
+    throw new Response("Missing expense ID", { status: 400 });
   }
 
-  // Redirect back to the list so loader runs again
-  return redirect("/expenses/list");
+  try {
+    await prisma.expense.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error("Failed to delete expense:", error);
+    throw new Response("Failed to delete expense", { status: 500 });
+  }
+
+  // Redirect back to expenses list to re-run loader
+  return redirect("/expenses/list?success=deleted");
 }

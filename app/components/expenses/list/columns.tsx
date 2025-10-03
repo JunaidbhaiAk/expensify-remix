@@ -2,7 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Edit, Trash2 } from "lucide-react";
 import { useNavigate, useSubmit } from "react-router";
 import { Button } from "~/components/ui/button";
-import type { Expenses } from "~/lib/constant";
+import type { Expenses } from "~/lib/types";
 
 export const columns: ColumnDef<Expenses>[] = [
   {

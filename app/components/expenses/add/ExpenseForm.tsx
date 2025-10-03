@@ -1,6 +1,5 @@
-// ~/components/expenses/new/ExpenseForm.tsx
 "use client";
-import { useForm, type DefaultValues } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "~/components/ui/button";
 import {
@@ -20,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { CircleFadingArrowUpIcon, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useActionData, useNavigate, useNavigation } from "react-router";
 import {
   Card,
@@ -34,18 +33,14 @@ import { CATEGORIES } from "~/lib/constant";
 import { expenseSchema, type ExpenseFormValues } from "./validator";
 import { useEffect } from "react";
 import type { action } from "~/routes/expenses/add/page";
-import { SuccessAlert } from "~/components/ui/alert-types";
+import { FailedAlert, SuccessAlert } from "~/components/ui/alert-types";
+import type { ExpenseFormPropsType } from "./type";
+import moment from "moment";
 
-export function ExpenseForm({
-  defaultValues,
-  id,
-}: {
-  defaultValues: DefaultValues<ExpenseFormValues>;
-  id: number;
-}) {
+export function ExpenseForm({ defaultValues, id }: ExpenseFormPropsType) {
   const navigation = useNavigation();
   const navigate = useNavigate();
-  const isEditing = id !== 0;
+  const isEditing = id !== "0";
   const isSubmitting = navigation.state === "submitting";
   const actionData = useActionData<typeof action>();
 
@@ -73,6 +68,9 @@ export function ExpenseForm({
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-2">
+      {typeof actionData?.errors === "string" && (
+        <FailedAlert message={actionData?.errors ? actionData?.errors : ""} />
+      )}
       {actionData?.success && (
         <SuccessAlert message={actionData?.message ?? ""} />
       )}
@@ -101,7 +99,11 @@ export function ExpenseForm({
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input
+                        type="date"
+                        {...field}
+                        max={moment().format("YYYY-MM-DD")}
+                      />
                     </FormControl>
                     <FormDescription>
                       When did this expense occur?

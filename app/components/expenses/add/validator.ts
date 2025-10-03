@@ -8,7 +8,7 @@ export const expenseSchema = z.object({
     .string()
     .min(1, "Description is required")
     .max(255, "Description too long"),
-  amount: z.coerce
+  amount: z
     .number({ error: "Amount is required" })
     .positive("Amount must be positive")
     .max(10000, "Amount too high"),
